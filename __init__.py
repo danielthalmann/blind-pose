@@ -1,8 +1,11 @@
+import bpy
 import subprocess
 import sys
+from .ObjectMove import ObjectMove
+from .PanelInterface import PanelInterface
 
 bl_info = {
-    "name": "CamPose",
+    "name": "Blind Pose",
     "author": "Daniel Thalmann",
     "version": (0, 0, 1),
     "blender": (2, 80, 0),
@@ -13,11 +16,37 @@ bl_info = {
 #    "tracker_url": ""
 }
 
-###
+_classes = [
+    #ObjectMove,
+    PanelInterface
+]
+
+
+#def menu_func(self, context):
+#    self.layout.operator(ObjectMove.bl_idname)
+
+
+#
 def register():
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python"])
-    
+    # subprocess.check_call([sys.executable, "-m", "pip", "install", "opencv-python", "mediapipe"])
+    for c in _classes: 
+        try:
+            bpy.utils.register_class(c)
+        except RuntimeError:
+            pass
+        
 
 
 def unregister():
-    print("Goodbye World")
+    for c in _classes: 
+        try:
+            bpy.utils.unregister_class(c)
+        except RuntimeError:
+            pass
+        
+
+
+# This allows you to run the script directly from Blender's Text editor
+# to test the add-on without having to install it.
+#if __name__ == "__main__":
+#    register()
