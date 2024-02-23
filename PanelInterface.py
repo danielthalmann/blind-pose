@@ -22,3 +22,4 @@ class PanelInterface(Panel):
         column.prop(settings, 'body_tracking', text='Body', icon='ARMATURE_DATA')
         column.prop(settings, 'hand_tracking', text='Hands', icon='VIEW_PAN')
         column.prop(settings, 'face_tracking', text='Face', icon='MONKEY')
+

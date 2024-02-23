@@ -1,8 +1,10 @@
 import bpy
 import subprocess
 import sys
-from .ObjectMove import ObjectMove
+from .Operators.ObjectMove import ObjectMove
+from .Operators.RunFileSelector import RunFileSelector
 from .PanelInterface import PanelInterface
+
 
 bl_info = {
     "name": "Blind Pose",
@@ -17,10 +19,13 @@ bl_info = {
 }
 
 _classes = [
-    #ObjectMove,
+    ObjectMove,
+    RunFileSelector,
     PanelInterface
 ]
 
+
+    
 
 #def menu_func(self, context):
 #    self.layout.operator(ObjectMove.bl_idname)
