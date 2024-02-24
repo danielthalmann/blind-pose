@@ -1,4 +1,5 @@
 import bpy
+import mathutils
 import subprocess
 import sys
 
@@ -40,25 +41,107 @@ class RunCapture(Operator):
     bl_label = "Capture camera"
      
     def capture_motion(self) :
+
+        try:
+            armature = bpy.data.objects['BlindPoseArmature']
+            armature.select_set(True)
+        except KeyError:
+            return
+
+        # switch in pose mode
+        bpy.ops.object.mode_set(mode='POSE', toggle=False)
+
+        bones = bpy.context.object.pose.bones
         
         vid = cv2.VideoCapture(0)
+        mpPose = mp.solutions.pose
+        mpDraw = mp.solutions.drawing_utils
+        pose = mpPose.Pose()
 
         # img = cv2.imread("p:\\3D\\wall.png")
+
+
+        points = self.body_points()
+        n = 0
 
         while (True):
             
             ret, frame = vid.read() 
+            frame = cv2.flip(frame, 1)
+            imgRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            results = pose.process(imgRGB)
+
+            if results.pose_landmarks:
+                mpDraw.draw_landmarks(frame, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
+                for id, lm in enumerate(results.pose_landmarks.landmark):
+                    #try:
+                    bones.get(points[id]).location.y = lm.z / 4
+                    bones.get(points[id]).location.x = (0.5-lm.x)
+                    bones.get(points[id]).location.z = (0.2-lm.y) + 2
+                        #bones[points[id]].keyframe_insert(data_path="location", frame=n)
+                    #except:
+                    #    pass
+
+
             cv2.imshow("frame", frame)
+
             # the space ' ' button is set as the 
             # quitting button you may use any 
             # desired button of your choice 
-            
             if cv2.waitKey(1) & 0xFF == ord(' '): 
                 break
+        
+
+            n = n + 1
+                       
+            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            
 
         vid.release()
 
         cv2.destroyAllWindows()
+
+
+    def body_points(self):
+        # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker
+        return [
+            # head
+            'nose',
+            'left eye inner',
+            'left eye',
+            'left eye outer',
+            'right eye inner',
+            'right eye',
+            'right eye outer',
+            'left ear',
+            'right ear',
+            'mouth left',
+            'mouth right',
+            # body,
+            'left shoulder',
+            'right shoulder',
+            'left elbow',
+            'right elbow',
+            'left wrist',
+            'right wrist',
+            'left pinky',
+            'right pinky',
+            'left index',
+            'right index',
+            'left thumb',
+            'right thumb',
+            'left hip',
+            'right hip',
+            'left knee',
+            'right knee',
+            'left ankle',
+            'right ankle',
+            'left heel',
+            'right heel',
+            'left foot index',
+            'right foot index'
+        ]
+
         
     def execute(self, context):
         
@@ -88,73 +171,88 @@ class RunCreateArmature(Operator):
     def create_armature(self) :
 
     
-        if (bpy.ops.object.armature["BlindPoseArmature"])
-            return 
-
+        try:
+            bpy.data.objects['BlindPoseArmature']
+            return
+        except KeyError:
+            pass
+        
         # create new armature
         bpy.ops.object.armature_add(enter_editmode=False)
         # obtaine selected object
         armature = bpy.context.object
         # rename armature 
         armature.name = "BlindPoseArmature"
-            
+
+        # armature.dsplay_type = 'STICK'
+        
+        armature.data.name = "BlindPoseBody"
+
         # switch in edit mode
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
+
         # rename first bone
-        armature.data.bones[0].name = "Head"
+        armature.data.bones[0].name = "head"
+        root = bpy.context.active_object.data.edit_bones["head"]
+        #root = armature.data.bones[0]
+
+        # add bones
+        self.add_bone(None, 'nose', (0.0, 5.0, 0.0))
+
+        left_eye = self.add_bone(None, 'left eye', (-2.5, 7.0, -0.1))
+        self.add_bone(left_eye, 'left eye inner', (-1.5, 7.0, -0.1))
+        self.add_bone(left_eye, 'left eye outer', (-3.5, 7.0, -0.1))
         
-    
-        for id, lm in enumerate(self.body_point()):
-            eb = armature.data.edit_bones.new("Bone_" + str(id))
-            eb.parent = armature.data.edit_bones["Head"]
-            cx, cy, cz = lm.x * 4, lm.y, lm.z
-            eb.head = (cz, cx, cy) # if the head and tail are the same, the bone is deleted
-            eb.tail = (cz + 1, cx, cy) # upon returning to object mode
+        right_eye = self.add_bone(None, 'right eye', (2.5, 7.0, -0.1))
+        self.add_bone(right_eye, 'right eye inner', (1.5, 7.0, -0.1))
+        self.add_bone(right_eye, 'right eye outer', (3.5, 7.0, -0.1))
         
+        self.add_bone(None, 'left ear', (-5.0, 6.5, -0.1))
+        self.add_bone(None, 'right ear', (5.0, 6.5, -0.1))
         
+        self.add_bone(None, 'mouth left', (-1.5, 3.0, -0.1))
+        self.add_bone(None, 'mouth right', (1.5, 3.0, -0.1))
+
+        self.add_bone(None, 'left shoulder', (0, 0, 0))
+        self.add_bone(None, 'right shoulder', (0, 0, 0))
+        self.add_bone(None, 'left elbow', (0, 0, 0))
+        self.add_bone(None, 'right elbow', (0, 0, 0))
+        self.add_bone(None, 'left wrist', (0, 0, 0))
+        self.add_bone(None, 'right wrist', (0, 0, 0))
+        self.add_bone(None, 'left pinky', (0, 0, 0))
+        self.add_bone(None, 'right pinky', (0, 0, 0))
+        self.add_bone(None, 'left index', (0, 0, 0))
+        self.add_bone(None, 'right index', (0, 0, 0))
+        self.add_bone(None, 'left thumb', (0, 0, 0))
+        self.add_bone(None, 'right thumb', (0, 0, 0))
+        self.add_bone(None, 'left hip', (0, 0, 0))
+        self.add_bone(None, 'right hip', (0, 0, 0))
+        self.add_bone(None, 'left knee', (0, 0, 0))
+        self.add_bone(None, 'right knee', (0, 0, 0))
+        self.add_bone(None, 'left ankle', (0, 0, 0))
+        self.add_bone(None, 'right ankle', (0, 0, 0))
+        self.add_bone(None, 'left heel', (0, 0, 0))
+        self.add_bone(None, 'right heel', (0, 0, 0))
+        self.add_bone(None, 'left foot index', (0, 0, 0))
+        self.add_bone(None, 'right foot index', (0, 0, 0))        
+
         obj = bpy.context.object
-        
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
-        
 
-    def body_point(self)
-        # https://developers.google.com/mediapipe/solutions/vision/pose_landmarker
-        return [
-            'nose',
-            'left eye inner',
-            'left eye',
-            'left eye outer',
-            'right eye inner',
-            'right eye',
-            'right eye outer',
-            'left ear',
-            'right ear',
-            'mouth left',
-            'mouth right',
-            'left shoulder',
-            'right shoulder',
-            'left elbow',
-            'right elbow',
-            'left wrist',
-            'right wrist',
-            'left pinky',
-            'right pinky',
-            'left index',
-            'right index',
-            'left thumb',
-            'right thumb',
-            'left hip',
-            'right hip',
-            'left knee',
-            'right knee',
-            'left ankle',
-            'right ankle',
-            'left heel',
-            'right heel',
-            'left foot index',
-            'right foot index'
-        ]
 
+    def add_bone(self, parent, bone_name, vect):
+
+        bpy.ops.armature.bone_primitive_add(name=bone_name)
+        bone = bpy.context.active_object.data.edit_bones[bone_name]
+        bone.tail.x = vect[0]
+        bone.tail.y = vect[2]
+        bone.tail.z = vect[1]
+        bone.head = bone.tail
+        bone.head.y = vect[2] + 0.3
+        if parent != None :
+            bone.head = parent.tail
+            bone.parent = parent
+        return bone
         
     def execute(self, context):
         
@@ -167,7 +265,7 @@ class RunCreateArmature(Operator):
 
 
 class PanelInterface(Panel):
-    bl_idname = "VIEW3D_PT_Pose" # Notice the ‘CATEGORY_PT_name’ Panel.bl_idname, this is a naming convention for panels.
+    bl_idname = "VIEW3D_PT_Pose" # Notice the ï¿½CATEGORY_PT_nameï¿½ Panel.bl_idname, this is a naming convention for panels.
     bl_label = "My Blind Pose" # title on the panel tools
     bl_category = "BlindPose" # text on tab
     bl_space_type = 'VIEW_3D' 
@@ -188,7 +286,7 @@ class PanelInterface(Panel):
         column.label(text="Capture Mode:", icon='MOD_ARMATURE')
         column.prop(settings, 'body_tracking', text='Body', icon='ARMATURE_DATA')
 #        column.prop(settings, 'hand_tracking', text='Hands', icon='VIEW_PAN')
-        column.prop(settings, 'face_tracking', text='Face', icon='MONKEY')
+#        column.prop(settings, 'face_tracking', text='Face', icon='MONKEY')
 
 
 
