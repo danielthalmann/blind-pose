@@ -74,13 +74,13 @@ class RunCapture(Operator):
             if results.pose_landmarks:
                 mpDraw.draw_landmarks(frame, results.pose_landmarks, mpPose.POSE_CONNECTIONS)
                 for id, lm in enumerate(results.pose_landmarks.landmark):
-                    #try:
-                    bones.get(points[id]).location.y = lm.z / 4
-                    bones.get(points[id]).location.x = (0.5-lm.x)
-                    bones.get(points[id]).location.z = (0.2-lm.y) + 2
-                        #bones[points[id]].keyframe_insert(data_path="location", frame=n)
-                    #except:
-                    #    pass
+                    try:
+                        bones.get(points[id]).location.y = lm.z / 4
+                        bones.get(points[id]).location.x = (0.5-lm.x)
+                        bones.get(points[id]).location.z = (0.2-lm.y) + 2 
+                        # bones.get(points[id]).keyframe_insert(data_path="location", frame=n)
+                    except:
+                        pass
 
 
             cv2.imshow("frame", frame)
@@ -94,7 +94,7 @@ class RunCapture(Operator):
 
             n = n + 1
                        
-            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=1)
+            bpy.ops.wm.redraw_timer(type='DRAW_WIN_SWAP', iterations=2)
             
 
         vid.release()
@@ -170,17 +170,28 @@ class RunCreateArmature(Operator):
         
     def create_armature(self) :
 
-    
+
+        try:
+            # switch in object mode
+            bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
+        except:
+            pass
+        
+        
         try:
             bpy.data.objects['BlindPoseArmature']
             return
         except KeyError:
             pass
-        
-        # create new armature
+                # create new armature
         bpy.ops.object.armature_add(enter_editmode=False)
         # obtaine selected object
         armature = bpy.context.object
+        armature.select_set(True)
+
+        bpy.context.object.data.display_type = 'STICK'
+
+
         # rename armature 
         armature.name = "BlindPoseArmature"
 
@@ -192,48 +203,54 @@ class RunCreateArmature(Operator):
         bpy.ops.object.mode_set(mode='EDIT', toggle=False)
 
         # rename first bone
-        armature.data.bones[0].name = "head"
-        root = bpy.context.active_object.data.edit_bones["head"]
+        armature.data.bones[0].name = "nose"
+        
+        bone = bpy.context.active_object.data.edit_bones["nose"]
+        bone.tail.x = 0
+        bone.tail.y = 0
+        bone.tail.z = 0
+        bone.head = bone.tail
+        bone.head.y = 0.3
         #root = armature.data.bones[0]
 
         # add bones
-        self.add_bone(None, 'nose', (0.0, 5.0, 0.0))
+        #self.add_bone(None, 'nose', (0, 0, 0))
 
-        left_eye = self.add_bone(None, 'left eye', (-2.5, 7.0, -0.1))
-        self.add_bone(left_eye, 'left eye inner', (-1.5, 7.0, -0.1))
-        self.add_bone(left_eye, 'left eye outer', (-3.5, 7.0, -0.1))
+        self.add_bone(None, 'left eye', (0, 0, 0))
+        self.add_bone(None, 'left eye inner', (0, 0, 0))
+        self.add_bone(None, 'left eye outer', (0, 0, 0))
         
-        right_eye = self.add_bone(None, 'right eye', (2.5, 7.0, -0.1))
-        self.add_bone(right_eye, 'right eye inner', (1.5, 7.0, -0.1))
-        self.add_bone(right_eye, 'right eye outer', (3.5, 7.0, -0.1))
+        self.add_bone(None, 'right eye', (0, 0, 0))
+        self.add_bone(None, 'right eye inner',(0, 0, 0))
+        self.add_bone(None, 'right eye outer', (0, 0, 0))
         
-        self.add_bone(None, 'left ear', (-5.0, 6.5, -0.1))
-        self.add_bone(None, 'right ear', (5.0, 6.5, -0.1))
+        self.add_bone(None, 'left ear', (0, 0, 0))
+        self.add_bone(None, 'right ear', (0, 0, 0))
         
-        self.add_bone(None, 'mouth left', (-1.5, 3.0, -0.1))
-        self.add_bone(None, 'mouth right', (1.5, 3.0, -0.1))
+        self.add_bone(None, 'mouth left', (0, 0, 0))
+        self.add_bone(None, 'mouth right', (0, 0, 0))
 
         self.add_bone(None, 'left shoulder', (0, 0, 0))
-        self.add_bone(None, 'right shoulder', (0, 0, 0))
         self.add_bone(None, 'left elbow', (0, 0, 0))
-        self.add_bone(None, 'right elbow', (0, 0, 0))
         self.add_bone(None, 'left wrist', (0, 0, 0))
-        self.add_bone(None, 'right wrist', (0, 0, 0))
         self.add_bone(None, 'left pinky', (0, 0, 0))
-        self.add_bone(None, 'right pinky', (0, 0, 0))
         self.add_bone(None, 'left index', (0, 0, 0))
-        self.add_bone(None, 'right index', (0, 0, 0))
         self.add_bone(None, 'left thumb', (0, 0, 0))
-        self.add_bone(None, 'right thumb', (0, 0, 0))
         self.add_bone(None, 'left hip', (0, 0, 0))
-        self.add_bone(None, 'right hip', (0, 0, 0))
         self.add_bone(None, 'left knee', (0, 0, 0))
-        self.add_bone(None, 'right knee', (0, 0, 0))
         self.add_bone(None, 'left ankle', (0, 0, 0))
-        self.add_bone(None, 'right ankle', (0, 0, 0))
         self.add_bone(None, 'left heel', (0, 0, 0))
-        self.add_bone(None, 'right heel', (0, 0, 0))
         self.add_bone(None, 'left foot index', (0, 0, 0))
+        self.add_bone(None, 'right shoulder', (0, 0, 0))
+        self.add_bone(None, 'right elbow', (0, 0, 0))
+        self.add_bone(None, 'right wrist', (0, 0, 0))
+        self.add_bone(None, 'right pinky', (0, 0, 0))
+        self.add_bone(None, 'right index', (0, 0, 0))
+        self.add_bone(None, 'right thumb', (0, 0, 0))
+        self.add_bone(None, 'right hip', (0, 0, 0))
+        self.add_bone(None, 'right knee', (0, 0, 0))
+        self.add_bone(None, 'right ankle', (0, 0, 0))
+        self.add_bone(None, 'right heel', (0, 0, 0))
         self.add_bone(None, 'right foot index', (0, 0, 0))        
 
         obj = bpy.context.object
@@ -250,6 +267,7 @@ class RunCreateArmature(Operator):
         bone.head = bone.tail
         bone.head.y = vect[2] + 0.3
         if parent != None :
+            print(parent)
             bone.head = parent.tail
             bone.parent = parent
         return bone
