@@ -27,6 +27,20 @@ bl_info = {
 }
 
 
+def look_rotation(source, target, upwards = mathutils.Vector((0,0,1))):
+
+    forward = target - source
+    
+    forward = forward.normalized()
+    upwards = upwards.normalized()
+    
+    right = forward.cross(upwards).normalized()
+    up = right.cross(forward)
+    
+    return mathutils.Matrix([right, forward, up]).transposed().to_euler()
+
+
+
 
 class BlindPoseSettings(PropertyGroup):
 
@@ -76,8 +90,8 @@ class RunCapture(Operator):
                 for id, lm in enumerate(results.pose_landmarks.landmark):
                     try:
                         bones.get(points[id]).location.y = lm.z / 4
-                        bones.get(points[id]).location.x = (0.5-lm.x)
-                        bones.get(points[id]).location.z = (0.2-lm.y) + 2 
+                        bones.get(points[id]).location.x = (0.5-lm.x) * 2 
+                        bones.get(points[id]).location.z = ((0.2-lm.y) + 2 ) * 2
                         # bones.get(points[id]).keyframe_insert(data_path="location", frame=n)
                     except:
                         pass
@@ -170,7 +184,16 @@ class RunCreateArmature(Operator):
         
     def create_armature(self) :
 
-
+        import numpy as np
+        frame = np.zeros((100,100,3), dtype=np.uint8)
+        imgRGB = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        mpPose = mp.solutions.pose
+        pose = mpPose.Pose()
+        results = pose.process(imgRGB)
+        print(results.pose_landmarks)
+        if results.pose_landmarks:
+            print (results.pose_landmarks )
+                
         try:
             # switch in object mode
             bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -205,53 +228,58 @@ class RunCreateArmature(Operator):
         # rename first bone
         armature.data.bones[0].name = "nose"
         
-        bone = bpy.context.active_object.data.edit_bones["nose"]
-        bone.tail.x = 0
-        bone.tail.y = 0
-        bone.tail.z = 0
-        bone.head = bone.tail
-        bone.head.y = 0.3
+        #   bone = bpy.context.active_object.data.edit_bones["nose"]
+        #   bone.tail.x = 0
+        #   bone.tail.y = 0
+        #   bone.tail.z = 0
+        #   bone.head = bone.tail
+        #   bone.head.y = 0.3
         #root = armature.data.bones[0]
 
         # add bones
         #self.add_bone(None, 'nose', (0, 0, 0))
+        self.add_bone(None, 'nose',                      (0, 0.01, 0))
 
-        self.add_bone(None, 'left eye', (0, 0, 0))
-        self.add_bone(None, 'left eye inner', (0, 0, 0))
-        self.add_bone(None, 'left eye outer', (0, 0, 0))
+        self.add_bone(None, 'left eye',                  (0, 0.01, 0))
+        self.add_bone(None, 'left eye inner',            (0, 0.02, 0))
+        self.add_bone(None, 'left eye outer',            (0, 0.03, 0))
         
-        self.add_bone(None, 'right eye', (0, 0, 0))
-        self.add_bone(None, 'right eye inner',(0, 0, 0))
-        self.add_bone(None, 'right eye outer', (0, 0, 0))
+        self.add_bone(None, 'right eye',                 (0, 0.04, 0))
+        self.add_bone(None, 'right eye inner',           (0, 0.04, 0))
+        self.add_bone(None, 'right eye outer',           (0, 0.06, 0))
         
-        self.add_bone(None, 'left ear', (0, 0, 0))
-        self.add_bone(None, 'right ear', (0, 0, 0))
+        self.add_bone(None, 'left ear',                  (0, 0.07, 0))
+        self.add_bone(None, 'right ear',                 (0, 0.07, 0))
         
-        self.add_bone(None, 'mouth left', (0, 0, 0))
-        self.add_bone(None, 'mouth right', (0, 0, 0))
+        self.add_bone(None, 'mouth left',                (0, 0.09, 0))
+        self.add_bone(None, 'mouth right',               (0, 0.10, 0))
 
-        self.add_bone(None, 'left shoulder', (0, 0, 0))
-        self.add_bone(None, 'left elbow', (0, 0, 0))
-        self.add_bone(None, 'left wrist', (0, 0, 0))
-        self.add_bone(None, 'left pinky', (0, 0, 0))
-        self.add_bone(None, 'left index', (0, 0, 0))
-        self.add_bone(None, 'left thumb', (0, 0, 0))
-        self.add_bone(None, 'left hip', (0, 0, 0))
-        self.add_bone(None, 'left knee', (0, 0, 0))
-        self.add_bone(None, 'left ankle', (0, 0, 0))
-        self.add_bone(None, 'left heel', (0, 0, 0))
-        self.add_bone(None, 'left foot index', (0, 0, 0))
-        self.add_bone(None, 'right shoulder', (0, 0, 0))
-        self.add_bone(None, 'right elbow', (0, 0, 0))
-        self.add_bone(None, 'right wrist', (0, 0, 0))
-        self.add_bone(None, 'right pinky', (0, 0, 0))
-        self.add_bone(None, 'right index', (0, 0, 0))
-        self.add_bone(None, 'right thumb', (0, 0, 0))
-        self.add_bone(None, 'right hip', (0, 0, 0))
-        self.add_bone(None, 'right knee', (0, 0, 0))
-        self.add_bone(None, 'right ankle', (0, 0, 0))
-        self.add_bone(None, 'right heel', (0, 0, 0))
-        self.add_bone(None, 'right foot index', (0, 0, 0))        
+        shoulder = self.add_bone(None, 'left shoulder',  (0, 0.11, 0))
+        elbow = self.add_bone(shoulder, 'left elbow',    (0, 0.12, 0))
+        wrist = self.add_bone(elbow, 'left wrist',       (0, 0.13, 0))
+        self.add_bone(wrist, 'left pinky',               (0, 0.14, 0))
+        self.add_bone(wrist, 'left index',               (0, 0.15, 0))
+        self.add_bone(wrist, 'left thumb',               (0, 0.16, 0))
+        
+        hip   = self.add_bone(None , 'left hip',         (-0.1, 0.17, 0))
+        knee  = self.add_bone(hip  , 'left knee',        (-0.1, 0.18, 0))
+        ankle = self.add_bone(knee , 'left ankle',       (-0.1, 0.19, 0))
+        heel  = self.add_bone(ankle, 'left heel',        (-0.1, 0.21, 0))
+        foot  = self.add_bone(ankle, 'left foot index',  (-0.1, 0.22, 0))
+        
+        
+        shoulder = self.add_bone(None, 'right shoulder', (0, 0.23, 0))
+        elbow = self.add_bone(None, 'right elbow',       (0, 0.24, 0))
+        wrist = self.add_bone(None, 'right wrist',       (0, 0.25, 0))
+        self.add_bone(None, 'right pinky',               (0, 0.26, 0))
+        self.add_bone(None, 'right index',               (0, 0.27, 0))
+        self.add_bone(None, 'right thumb',               (0, 0.28, 0))
+        
+        hip   = self.add_bone(None , 'right hip',        (0.1, 0.17, 0))
+        knee  = self.add_bone(hip  , 'right knee',       (0.1, 0.18, 0))
+        ankle = self.add_bone(knee , 'right ankle',      (0.1, 0.19, 0))
+        heel  = self.add_bone(ankle, 'right heel',       (0.1, 0.21, 0))
+        foot  = self.add_bone(ankle, 'right foot index', (0.1, 0.22, 0))        
 
         obj = bpy.context.object
         bpy.ops.object.mode_set(mode='OBJECT', toggle=False)
@@ -261,15 +289,20 @@ class RunCreateArmature(Operator):
 
         bpy.ops.armature.bone_primitive_add(name=bone_name)
         bone = bpy.context.active_object.data.edit_bones[bone_name]
+        
         bone.tail.x = vect[0]
-        bone.tail.y = vect[2]
-        bone.tail.z = vect[1]
-        bone.head = bone.tail
-        bone.head.y = vect[2] + 0.3
+        bone.tail.y = vect[1]
+        bone.tail.z = vect[2]
+        
         if parent != None :
-            print(parent)
-            bone.head = parent.tail
+            print ("parent")
+            print (parent)
+            bone.use_connect = True
             bone.parent = parent
+        else :
+            bone.head = bone.tail
+            bone.head.y = vect[1] + 0.3
+                
         return bone
         
     def execute(self, context):
@@ -278,6 +311,25 @@ class RunCreateArmature(Operator):
         ## run_full(file_dir)
         return{'FINISHED'}
 
+
+class RunTestArmature(Operator):
+    """Test armature for motion capture"""
+    bl_idname = "run.test_armature"
+    bl_label = "Test armature"
+  
+    def execute(self, context):
+        
+        mobile = bpy.data.objects["Cube"]
+        cible  = bpy.data.objects["Cible"]
+
+        mobile.rotation_euler = look_rotation(mobile.location, cible.location)
+
+#        v = lookAt(mobile.location, cible.location)
+        
+#        mobile.rotation_mode = 'XYZ'
+#        mobile.rotation_euler = (v[0], v[1], v[2])
+        
+        return{'FINISHED'}
         
 
 
@@ -296,6 +348,7 @@ class PanelInterface(Panel):
 
         layout.row().operator(RunCreateArmature.bl_idname, text="Armature", icon='MOD_ARMATURE')
         layout.row().operator(RunCapture.bl_idname, text="Capture")
+        layout.row().operator(RunTestArmature.bl_idname, text="Test")
 #        layout.row().operator(RunFileSelector.bl_idname, text="From file")
 
         box = layout.box()
@@ -312,6 +365,7 @@ _classes = [
     RunFileSelector,
     RunCapture,
     RunCreateArmature,
+    RunTestArmature,
     PanelInterface
 ]
 
